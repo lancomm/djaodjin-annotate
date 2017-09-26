@@ -20,9 +20,8 @@
 
 .annotate-color-selectors {
 	position: absolute;
-	top: 50px;
-	left: 50%;
-	transform: translateX(-50%);
+	top: 10px;
+  left: 10px;
 	background-color: #FAFAFA;
 	padding:5px;
 	z-index: 100;

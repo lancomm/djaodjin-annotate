@@ -44,10 +44,11 @@ customizable options:
 options = {
 	width: "640",			// Width of canvas
 	height: "400",			// Height of canvas
-	color:"red", 			// Color for shape and text
+	color:"red", 			// default color for shape and text
+	colors: ["#CCCCC", "#FAFAFA"], 	// list of available colors
 	type : "rectangle",		// default shape: can be "rectangle", "arrow" or "text"
 	images: null,			// Array of images path : ["images/image1.png", "images/image2.png"]
-	linewidth:2,			// Line width for rectangle and arrow shapes
+	linewidth: 2,			// Line width for rectangle and arrow shapes
 	fontsize:"20px",		// font size for text
 	bootstrap: true,		// Bootstrap theme design
 	position: "top",		// Position of toolbar (available only with bootstrap)

@@ -1,5 +1,5 @@
 /*
-djaodjin-annotate.js v0.0.4
+djaodjin-annotate.js v0.0.5
 Copyright (c) 2015, Djaodjin Inc.
 MIT License
 */
@@ -34,6 +34,25 @@ MIT License
     this.compensationWidthRate = 1;
     this.linewidth = 1;
     this.fontsize = 1;
+    this.color = options.color;
+    this.colors = options.colors;
+    if (this.colors === null){
+      this.colors = [
+        '#7bd148',
+        '#5484ed',
+        '#a4bdfc',
+        '#46d6db',
+        '#7ae7bf',
+        '#51b749',
+        '#fbd75b',
+        '#ffb878',
+        '#ff887c',
+        '#dc2127',
+        '#dbadff',
+        '#e1e1e1'
+      ]
+    }
+
     this.init();
   }
   Annotate.prototype = {
@@ -112,6 +131,12 @@ MIT License
           ' title="Redo the last undone annotation"' +
           'class="btn btn-primary ' + classPosition2 + ' annotate-redo">' +
           '<i class="glyphicon glyphicon-arrow-right"></i></button>' +
+          '<button type="button" id="colorselector"' +
+          ' title="Select color"' +
+          'class="btn ' + classPosition2 + ' annotate-select-color" style="background-color:' + self.color + '">&nbsp;' +
+          '</button>' +
+          '<input type="number" min="1" class="form-control ' + classPosition2 + ' annotate-select-linewidth" value="' + self.linewidth + '">px' +
+
           '</div>';
       } else {
         self.$tool = '<div id="" style="display:inline-block">' +
@@ -130,9 +155,16 @@ MIT License
           self.toolOptionId + '" data-tool="pen">PEN' +
           '<button id="redoaction"' +
           'title="Redo the last undone annotation">REDO</button>' +
+
           '</div>';
       }
       self.$tool = $(self.$tool);
+      self.$colorSelector = '';
+      $.each(self.colors, function(index, element){
+        self.$colorSelector += '<span class="annotate-color-selector" style="background-color: ' + element + '"></span>'
+      });
+
+      $('.annotate-container').append('<div class="annotate-color-selectors">' + self.$colorSelector + '</div>');
       $('.annotate-container').append(self.$tool);
       var canvasPosition = self.$el.offset();
       if (self.options.position === 'top' || self.options.position !==
@@ -165,7 +197,7 @@ MIT License
         ' style="position:absolute;z-index:100000;display:none;top:0;left:0;' +
         'background:transparent;border:1px dotted; line-height:25px;' +
         ';font-size:' + self.fontsize +
-        ';font-family:sans-serif;color:' + self.options.color +
+        ';font-family:sans-serif;color:' + self.color +
         ';word-wrap: break-word;outline-width: 0;overflow: hidden;' +
         'padding:0px"></textarea>');
       $('body').append(self.$textbox);
@@ -189,6 +221,15 @@ MIT License
       });
       self.$tool.on('click', '.annotate-undo', function(event) {
         self.undoaction(event);
+      });
+      self.$tool.on('click', '.annotate-select-color', function(event) {
+        self.selectColor(event);
+      });
+      $('.annotate-color-selectors').on('click', '.annotate-color-selector', function(event) {
+        self.setColor(event, this);
+      });
+      $(self.$tool).on('change keyup', '.annotate-select-linewidth', function(event){
+        self.setLineWidth(parseInt($(this).val()));
       });
       $(document).on(self.options.selectEvent, '.annotate-image-select',
         function(event) {
@@ -234,13 +275,12 @@ MIT License
     },
     addElements: function(newStoredElements, set, callback)
     {
-      var self = this; 
-      this.storedElement = newStoredElements; 
-      //console.log('DJ: Adding new annotations'); 
+      var self = this;
+      this.storedElement = newStoredElements;
       self.clear();
       self.redraw();
-      
-    },    
+
+    },
     pushImage: function(newImage, set, callback) {
       var self = this;
       var id = null;
@@ -344,6 +384,24 @@ MIT License
       self.$tool.children('.annotate-undo').attr('disabled', self.storedElement
         .length === 0);
     },
+    selectColor: function(event){
+      this.showColorPalette();
+    },
+    showColorPalette: function(){
+      $('.annotate-container .annotate-color-selectors').show();
+    },
+    hideColorPalette: function(){
+      $('.annotate-container .annotate-color-selectors').hide();
+    },
+    setColor: function(event, color){
+      var self = this;
+      self.color = $(color).css('background-color');
+      self.hideColorPalette();
+      $('.annotate-select-color').css('background-color', self.color)
+    },
+    setLineWidth: function(newLineWidth){
+      this.linewidth = newLineWidth;
+    },
     undoaction: function(event) {
       event.preventDefault();
       var self = this;
@@ -380,11 +438,11 @@ MIT License
         switch (element.type) {
           case 'rectangle':
             self.drawRectangle(self.baseContext, element.fromx, element.fromy,
-              element.tox, element.toy);
+              element.tox, element.toy, element.color, element.linewidth);
             break;
           case 'arrow':
             self.drawArrow(self.baseContext, element.fromx, element.fromy,
-              element.tox, element.toy);
+              element.tox, element.toy, element.color, element.linewidth);
             break;
           case 'pen':
             for (var b = 0; b < element.points.length - 1; b++) {
@@ -392,16 +450,16 @@ MIT License
               var fromy = element.points[b][1];
               var tox = element.points[b + 1][0];
               var toy = element.points[b + 1][1];
-              self.drawPen(self.baseContext, fromx, fromy, tox, toy);
+              self.drawPen(self.baseContext, fromx, fromy, tox, toy, element.color, element.linewidth);
             }
             break;
           case 'text':
             self.drawText(self.baseContext, element.text, element.fromx,
-              element.fromy, element.maxwidth);
+              element.fromy, element.maxwidth, element.color);
             break;
           case 'circle':
             self.drawCircle(self.baseContext, element.fromx, element.fromy,
-              element.tox, element.toy);
+              element.tox, element.toy, element.color, element.linewidth);
             break;
           default:
         }
@@ -412,17 +470,17 @@ MIT License
       // Clear Canvas
       self.drawingCanvas.width = self.drawingCanvas.width;
     },
-    drawRectangle: function(context, x, y, w, h) {
+    drawRectangle: function(context, x, y, w, h, color, linewidth) {
       var self = this;
       context.beginPath();
       context.rect(x, y, w, h);
       context.fillStyle = 'transparent';
       context.fill();
-      context.lineWidth = self.linewidth;
-      context.strokeStyle = self.options.color;
+      context.lineWidth = linewidth;
+      context.strokeStyle = color;
       context.stroke();
     },
-    drawCircle: function(context, x1, y1, x2, y2) {
+    drawCircle: function(context, x1, y1, x2, y2, color, linewidth) {
       var radiusX = (x2 - x1) * 0.5;
       var radiusY = (y2 - y1) * 0.5;
       var centerX = x1 + radiusX;
@@ -438,32 +496,33 @@ MIT License
         context.lineTo(centerX + radiusX * Math.cos(a), centerY + radiusY *
           Math.sin(a));
       }
-      context.lineWidth = self.linewidth;
-      context.strokeStyle = self.options.color;
+      context.lineWidth = linewidth;
+      context.strokeStyle = color;
       context.closePath();
       context.stroke();
     },
-    drawArrow: function(context, x, y, w, h) {
+    drawArrow: function(context, x, y, w, h, color, linewidth) {
       var self = this;
       var angle = Math.atan2(h - y, w - x);
       context.beginPath();
-      context.lineWidth = self.linewidth;
+      context.lineWidth = linewidth;
       context.moveTo(x, y);
       context.lineTo(w, h);
-      context.moveTo(w - self.linewidth * 5 * Math.cos(angle + Math.PI /
-        6), h - self.linewidth * 5 * Math.sin(angle + Math.PI / 6));
+      context.moveTo(w - linewidth * 5 * Math.cos(angle + Math.PI /
+        6), h - linewidth * 5 * Math.sin(angle + Math.PI / 6));
       context.lineTo(w, h);
-      context.lineTo(w - self.linewidth * 5 * Math.cos(angle - Math.PI /
-        6), h - self.linewidth * 5 * Math.sin(angle - Math.PI / 6));
-      context.strokeStyle = self.options.color;
+      context.lineTo(w - linewidth * 5 * Math.cos(angle - Math.PI /
+        6), h - linewidth * 5 * Math.sin(angle - Math.PI / 6));
+      context.strokeStyle = color;
       context.stroke();
     },
-    drawPen: function(context, fromx, fromy, tox, toy) {
+    drawPen: function(context, fromx, fromy, tox, toy, color, linewidth) {
       var self = this;
-      context.lineWidth = self.linewidth;
+      context.beginPath();
+      context.lineWidth = linewidth;
       context.moveTo(fromx, fromy);
       context.lineTo(tox, toy);
-      context.strokeStyle = self.options.color;
+      context.strokeStyle = color;
       context.stroke();
     },
     wrapText: function(drawingContext, text, x, y, maxWidth, lineHeight) {
@@ -486,11 +545,11 @@ MIT License
         drawingContext.fillText(line, x, y + i * lineHeight);
       }
     },
-    drawText: function(context, text, x, y, maxWidth) {
+    drawText: function(context, text, x, y, maxWidth, color) {
       var self = this;
       context.font = self.fontsize + ' sans-serif';
       context.textBaseline = 'top';
-      context.fillStyle = self.options.color;
+      context.fillStyle = color;
       self.wrapText(context, text, x + 3, y + 4, maxWidth, 25);
     },
     pushText: function() {
@@ -503,7 +562,8 @@ MIT License
           text: text,
           fromx: self.fromx,
           fromy: self.fromy,
-          maxwidth: self.tox
+          maxwidth: self.tox,
+          color: self.color
         });
         if (self.storedUndo.length > 0) {
           self.storedUndo = [];
@@ -522,6 +582,9 @@ MIT License
     },
     annotatestart: function(event) {
       var self = this;
+      if ($('.annotate-container .annotate-color-selectors').is(':visible')){
+        self.hideColorPalette();
+      }
       self.clicked = true;
       var offset = self.$el.offset();
       if (self.$textbox.is(':visible')) {
@@ -536,7 +599,8 @@ MIT License
             text: text,
             fromx: (self.fromxText - offset.left) * self.compensationWidthRate,
             fromy: (self.fromyText - offset.top) * self.compensationWidthRate,
-            maxwidth: self.tox
+            maxwidth: self.tox,
+            color: self.color
           });
           if (self.storedUndo.length > 0) {
             self.storedUndo = [];
@@ -581,7 +645,9 @@ MIT License
               fromx: self.fromx,
               fromy: self.fromy,
               tox: self.tox,
-              toy: self.toy
+              toy: self.toy,
+              color: self.color,
+              linewidth: self.linewidth
             });
             break;
           case 'circle':
@@ -590,7 +656,9 @@ MIT License
               fromx: self.fromx,
               fromy: self.fromy,
               tox: self.tox,
-              toy: self.toy
+              toy: self.toy,
+              color: self.color,
+              linewidth: self.linewidth
             });
             break;
           case 'arrow':
@@ -599,7 +667,9 @@ MIT License
               fromx: self.fromx,
               fromy: self.fromy,
               tox: self.tox,
-              toy: self.toy
+              toy: self.toy,
+              color: self.color,
+              linewidth: self.linewidth
             });
             break;
           case 'text':
@@ -607,13 +677,16 @@ MIT License
               left: self.fromxText + 2,
               top: self.fromyText,
               width: self.tox - 12,
-              height: self.toy
+              height: self.toy,
+              color: self.color
             });
             break;
           case 'pen':
             self.storedElement.push({
               type: 'pen',
-              points: self.points
+              points: self.points,
+              color: self.color,
+              linewidth: self.linewidth
             });
             for (var i = 0; i < self.points.length - 1; i++) {
               self.fromx = self.points[i][0];
@@ -621,8 +694,7 @@ MIT License
               self.tox = self.points[i + 1][0];
               self.toy = self.points[i + 1][1];
               self.drawPen(self.baseContext, self.fromx, self.fromy, self
-                .tox,
-                self.toy);
+                .tox, self.toy, self.color);
             }
             self.points = [];
             break;
@@ -667,7 +739,7 @@ MIT License
           self.toy = (pageY - offset.top) * self.compensationWidthRate -
             self.fromy;
           self.drawRectangle(self.drawingContext, self.fromx, self.fromy,
-            self.tox, self.toy);
+            self.tox, self.toy, self.color, self.linewidth);
           break;
         case 'arrow':
           self.clear();
@@ -675,7 +747,7 @@ MIT License
           self.toy = (pageY - offset.top) * self.compensationWidthRate;
           self.drawArrow(self.drawingContext, self.fromx, self.fromy,
             self.tox,
-            self.toy);
+            self.toy, self.color, self.linewidth);
           break;
         case 'pen':
           self.tox = (pageX - offset.left) * self.compensationWidthRate;
@@ -687,13 +759,14 @@ MIT License
             self.toy
           ]);
           self.drawPen(self.drawingContext, self.fromx, self.fromy, self.tox,
-            self.toy);
+            self.toy, self.color, self.linewidth);
           break;
         case 'text':
           self.clear();
           self.tox = (pageX - self.fromxText) * self.compensationWidthRate;
           self.toy = (pageY - self.fromyText) * self.compensationWidthRate;
           self.$textbox.css({
+            color: self.color,
             left: self.fromxText + 2,
             top: self.fromyText,
             width: self.tox - 12,
@@ -706,7 +779,7 @@ MIT License
           self.toy = (pageY - offset.top) * self.compensationWidthRate;
           self.drawCircle(self.drawingContext, self.fromx, self.fromy,
             self
-            .tox, self.toy);
+            .tox, self.toy, self.color, self.linewidth);
           break;
         default:
       }
@@ -770,7 +843,6 @@ MIT License
         throw new Error('No annotate initialized for: #' + $(this).attr(
           'id'));
       }
-    
     }else if (options === 'fill') {
       if ($annotate) {
         $annotate.addElements(cmdOption, true, callback);
@@ -778,7 +850,7 @@ MIT License
         throw new Error('No annotate initialized for: #' + $(this).attr(
           'id'));
       }
-    
+
     } else if (options === 'export') {
       if ($annotate) {
         $annotate.exportImage(cmdOption, callback);
@@ -797,6 +869,7 @@ MIT License
     height: null,
     images: [],
     color: 'red',
+    colors: null,
     type: 'rectangle',
     linewidth: 2,
     fontsize: '20px',

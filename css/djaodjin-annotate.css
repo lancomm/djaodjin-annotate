@@ -1,0 +1,51 @@
+.annotate-container{
+	position: relative;
+}
+
+.annotate-container > [id^=baseLayer]{
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: 0;
+	background: grey;
+}
+
+.annotate-container > [id^=drawingLayer]{
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: 1;
+	background: transparent;
+}
+
+.annotate-color-selectors {
+	position: absolute;
+	top: 50px;
+	left: 50%;
+	transform: translateX(-50%);
+	background-color: #FAFAFA;
+	padding:5px;
+	z-index: 100;
+  width: 160px;
+  box-shadow: 0 2px 2px 0 rgba(0,0,0,0.14), 0 3px 1px -2px rgba(0,0,0,0.2), 0 1px 5px 0 rgba(0,0,0,0.12);
+  border-radius: 3px;
+  display: none;
+}
+
+
+.annotate-color-selectors .annotate-color-selector {
+	height: 20px;
+  display: inline-block;
+	width: 20px;
+	cursor: pointer;
+	margin-right: 5px;
+}
+
+.annotate-color-selectors .annotate-color-selector:last-child {
+	margin-right: 0;
+}
+
+.annotate-select-linewidth{
+	display: inline;
+	width: 50px;
+}
